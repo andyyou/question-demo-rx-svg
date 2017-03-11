@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Vue Timepicker</title>
+
+  <script src="assets/javascripts/jquery.js"></script>
+  <script src="assets/javascripts/rx.js"></script>
+  <script src="assets/javascripts/vue.js"></script>
+
+  <style>
+    body {
+      background-color: rgba(0, 0, 0, .12);
+    }
+    svg {
+      border: 1px solid rgba(0, 0, 0, .3);
+      background-color: white;
+    }
+  </style>
+</head>
+<body>
+  <div id="coordinate"></div>
+  <svg viewBox="0 0 800 600">
+    <g id="layerA">
+		  <rect id="_x31_-6" x="10" y="10" width="74.5" height="74.5"/>
+		  <rect id="_x31_-4" x="90" y="10" width="74.5" height="74.5"/>
+		  <rect id="_x31_-2" x="170" y="10" width="74.5" height="74.5"/>
+    </g>
+  </svg>
+
+  <script>
+    var svg = document.querySelector('svg')
+    var body = document.body
+    var mousedown = Rx.Observable.fromEvent(svg, 'mousedown')
+    var mousemove = Rx.Observable.fromEvent(body, 'mousemove')
+    var mouseup = Rx.Observable.fromEvent(body, 'mouseup')
+
+    var moving = mousedown.map(function (e) {
+      var offset = {
+        x: e.offsetX,
+        y: e.offsetY
+      }
+      return mousemove.map(function (e) {
+        return {
+          x: e.clientX - offset.x,
+          y: e.clientY - offset.y
+        }
+      }).takeUntil(mouseup)
+    }).concatAll()
+
+    moving.subscribe(function (p) {
+      console.log(p)
+      document.getElementById('coordinate').innerHTML = '(' + p.x + ', ' + p.y + ')'
+      /**
+       * I want to transform for <g>
+       * but when point start in rect node area
+       * the e.clientX and Y will get wrong position
+       */
+    })
+    
+  </script>
+
+</body>
+</html>
