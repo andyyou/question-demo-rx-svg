@@ -14,50 +14,67 @@
     body {
       background-color: rgba(0, 0, 0, .12);
     }
+
     svg {
       border: 1px solid rgba(0, 0, 0, .3);
-      background-color: white;
+      background-color: white;  
+      /* 記得給寬高 */
+      width: 800px;
+      height: 600px;
     }
+
   </style>
 </head>
 <body>
-  <div id="coordinate"></div>
   <svg viewBox="0 0 800 600">
     <g id="layerA">
 		  <rect id="_x31_-6" x="10" y="10" width="74.5" height="74.5"/>
-		  <rect id="_x31_-4" x="90" y="10" width="74.5" height="74.5"/>
-		  <rect id="_x31_-2" x="170" y="10" width="74.5" height="74.5"/>
     </g>
   </svg>
 
   <script>
-    var svg = document.querySelector('svg')
+    var svg = document.querySelector('svg');
+    var rect = document.querySelector('#layerA');
     var body = document.body
-    var mousedown = Rx.Observable.fromEvent(svg, 'mousedown')
+    var mousedown = Rx.Observable.fromEvent(rect, 'mousedown')
     var mousemove = Rx.Observable.fromEvent(body, 'mousemove')
     var mouseup = Rx.Observable.fromEvent(body, 'mouseup')
+    
+    /**
+     * const { left: svgLeft, top: svgTop } = svg.getBoundingClientRect();
+    **/
+    var svgClientRect = svg.getBoundingClientRect()
+    var svgLeft = svgClientRect.left;
+    var svgTop = svgClientRect.top;
+    
 
-    var moving = mousedown.map(function (e) {
-      var offset = {
-        x: e.offsetX,
-        y: e.offsetY
-      }
-      return mousemove.map(function (e) {
-        return {
-          x: e.clientX - offset.x,
-          y: e.clientY - offset.y
-        }
-      }).takeUntil(mouseup)
-    }).concatAll()
+    // 如果 svg tag 寬高超出可是範圍(有捲軸)，就不能直接用 clientX
+    // 參考
 
-    moving.subscribe(function (p) {
-      console.log(p)
-      document.getElementById('coordinate').innerHTML = '(' + p.x + ', ' + p.y + ')'
+    var moving = mousedown
+                  .do(e => {
+                    console.log(e.target.getBoundingClientRect())
+                  })
+                  .map(e => mousemove.takeUntil(mouseup))
+                  .concatAll()
+                  /**
+                   * svg 內部的物件(rect)，無法正常取得 
+                   * 滑鼠點按的 offsetX 跟 offsetY(會一直取到 svg tag 的)
+                   * 參考：https://bugs.chromium.org/p/chromium/issues/detail?id=592316
+                  **/
+                  .map((move) => {
+                      return {
+                          x: move.clientX,
+                          y: move.clientY 
+                      }
+                  })
+
+    moving.subscribe(function (pos) {
       /**
-       * I want to transform for <g>
-       * but when point start in rect node area
-       * the e.clientX and Y will get wrong position
-       */
+       *  rect.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+      **/
+      rect.style.transform = 'translate(' + pos.x + 'px, '  + pos.y + 'px)'
+    
     })
     
   </script>
